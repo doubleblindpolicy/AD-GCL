@@ -3,7 +3,7 @@ import scipy.sparse as sp
 import torch
 import torch.nn as nn
 
-from model import Model
+from model import Model, Gene, Disc
 from utils import *
 
 from sklearn.metrics import roc_auc_score
@@ -13,6 +13,7 @@ import dgl
 import argparse
 from tqdm import tqdm
 from aug import neighbor_pruning, neighbor_completion
+import copy
 import torch.nn.functional as F
 
 
@@ -59,8 +60,8 @@ torch.backends.cudnn.benchmark = False
 
 device = args.gpu_id
 # Load and preprocess data
-adj, features, labels, idx_train, idx_val,\
-idx_test, ano_label, str_ano_label, attr_ano_label = load_mat(args.dataset)
+adj, features, ano_label = load_mat(args.dataset)
+
 
 features, _ = preprocess_features(features)
 
@@ -86,6 +87,16 @@ adj = torch.FloatTensor(adj[np.newaxis]).to(device)
 # Initialize model and optimiser
 model = Model(ft_size, args.embedding_dim, 'prelu', args.negsamp_ratio, args.readout).to(device)
 optimiser = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+
+gene = Gene(nb_nodes, ft_size, 128)
+# disc = Disc(features.shape[2], 1)
+disc = Disc(128, 1)
+
+gene_optimiser = torch.optim.Adam(gene.parameters(), lr = 2e-5, weight_decay = 1e-5)
+disc_optimiser =  torch.optim.Adam(disc.parameters(), lr = 2e-5, weight_decay = 1e-5)
+bce_loss = nn.BCELoss().to(device)
+
+best_gene = copy.deepcopy(gene)
 
 b_xent = nn.BCEWithLogitsLoss(reduction='none', pos_weight=torch.tensor([args.negsamp_ratio]).to(device))
 
@@ -306,17 +317,9 @@ with tqdm(total=args.auc_test_rounds) as pbar_test:
 ano_score_final = np.mean(multi_round_ano_score, axis=0)
 auc = roc_auc_score(ano_label, ano_score_final)
 
-print(args.dataset)
 print('AUC:{:.4f}'.format(auc))
 
-print(type(ano_label))
-print(ano_label.shape)
-
-print(type(ano_score_final))
-print(ano_score_final.shape)
-
 out_degrees = dgl_graph.out_degrees().numpy()
-in_degrees = dgl_graph.in_degrees().numpy()
 
 result = np.column_stack((ano_label, ano_score_final, out_degrees))
 
@@ -325,11 +328,3 @@ high_auc_score = roc_auc_score(result[result[:, 2] > args.degree, 0], result[res
 print(low_auc_score)
 print(high_auc_score)
 
-with open('./AD-GCL/results/{}.txt'.format(args.dataset), 'a') as file:
-    file.write(f'Dataset: {args.dataset}\n')
-    file.write(f'lr: {args.lr}, epoch: {args.num_epoch}, degree threshold: {args.threshold}\n')
-    file.write(f'AUC: {auc:.4f}\n')
-    file.write(f'low AUC: {low_auc_score:.4f}\n')
-    file.write(f'high AUC: {high_auc_score:.4f}\n\n')
-# result = np.hstack((anomaly_label, ano_score.cpu().numpy()))
-np.savetxt("./AD-GCL/ano_score/{}_{:.4f}.txt".format(args.dataset, auc), result, delimiter=',')

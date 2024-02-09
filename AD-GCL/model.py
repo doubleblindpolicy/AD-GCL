@@ -131,3 +131,57 @@ class Model(nn.Module):
         ret = self.disc(c, h_mv)
 
         return ret, h_mv, c
+
+
+class Gene(nn.Module):
+    def __init__(self, nb_nodes, hid_dim, out_dim):
+        super(Gene, self).__init__()
+        self.fc = nn.Linear(hid_dim, out_dim)
+        self.layer1 = GraphConv(hid_dim, hid_dim)
+        self.layer2 = GraphConv(hid_dim, out_dim)
+        self.sigmoid = nn.Sigmoid()
+
+        self.batchnorm = nn.BatchNorm1d(out_dim)
+
+        self.epsilon = torch.nn.Parameter(torch.Tensor(nb_nodes))
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        torch.nn.init.constant_(self.epsilon, 0.5)
+        
+    def forward(self, g, x, adj):
+        h1 = self.fc(x)
+        h2 = F.relu(self.layer1(g, x))
+        h2 = self.layer2(g, h2)
+
+        h = (1 - self.epsilon.view(-1,1)) * h1 + self.epsilon.view(-1,1) * h2
+
+        ret = (torch.mm(h, h.t()) + torch.mm(x, x.t())) / 2
+
+        h = self.batchnorm(h)
+
+        return ret, h
+
+class GraphConv(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super(GraphConv, self).__init__()
+        self.linear = nn.Linear(input_dim, output_dim)
+    
+    def forward(self, g, features):
+        g = g.local_var()
+        g.ndata['h'] = features
+        g.update_all(message_func=dgl.function.copy_src(src='h', out='m'), reduce_func=dgl.function.sum(msg='m', out='h'))
+        h = g.ndata['h']
+        return self.linear(h)
+
+class Disc(nn.Module):
+    def __init__(self, hid_dim, out_dim):
+        super(Disc, self).__init__()
+        self.f_k = nn.Bilinear(hid_dim, hid_dim, out_dim)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x1, x2):
+        logits = self.f_k(x1, x2)
+        logits = self.sigmoid(logits)
+
+        return logits

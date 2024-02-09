@@ -36,6 +36,13 @@ def neighbor_pruning(graph, node_dist, sim, x, degree, feat_drop_rate_1, feat_dr
     node_degree = th.LongTensor(node_degree)
     rest_node_degree = th.LongTensor(rest_node_degree)
 
+    degree_dist = scatter_add(th.ones(node_degree.size()), node_degree)
+
+    
+    prob = degree_dist.unsqueeze(dim=0).repeat(src_idx.size(0), 1)
+    
+    aug_degree = th.multinomial(prob, 1).flatten()
+    
     src_nodes, dst_nodes = graph.edges()
     src_edge_indices = np.where(np.isin(src_nodes.numpy(), src_idx))[0]
     dst_edge_indices = np.where(np.isin(dst_nodes.numpy(), src_idx))[0]
