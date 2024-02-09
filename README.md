@@ -21,22 +21,22 @@
 ## Usage
 ```python
 # Cora
-python ./AD-GCL/run.py --dataset 'cora' --lr 0.005 --num_epoch 200 --threshold 7 --gpu_id 0
+python ./AD-GCL/run.py --dataset 'cora' --lr 5e-3 --num_epoch 200 --threshold 7 --gpu_id 0
 
 # Citeseer
-python ./AD-GCL/run.py --dataset 'citeseer' --lr 0.003 --num_epoch 200 --threshold 6 --gpu_id 0
+python ./AD-GCL/run.py --dataset 'citeseer' --lr 3e-3 --num_epoch 200 --threshold 6 --gpu_id 0
 
 # Pubmed
-python ./AD-GCL/run.py --dataset 'pubmed' --lr 0.004 --num_epoch 100 --threshold 8 --gpu_id 0
+python ./AD-GCL/run.py --dataset 'pubmed' --lr 4e-3 --num_epoch 100 --threshold 8 --gpu_id 0
 
 # Bitcoinotc
-python ./AD-GCL/run.py --dataset 'bitcoinotc' --lr 0.0004 --num_epoch 100 --threshold 8 --gpu_id 0
+python ./AD-GCL/run.py --dataset 'bitcoinotc' --lr 4e-4 --num_epoch 100 --threshold 8 --gpu_id 0
 
 # BITotc
-python ./AD-GCL/run.py --dataset 'bitotc' --lr 0.0005 --num_epoch 100 --threshold 7 --gpu_id 0
+python ./AD-GCL/run.py --dataset 'bitotc' --lr 5e-4 --num_epoch 100 --threshold 7 --gpu_id 0
 
 # BITalpha
-python ./AD-GCL/run.py --dataset 'bitalpha' --lr 0.005 --num_epoch 100 --threshold 8 --gpu_id 0
+python ./AD-GCL/run.py --dataset 'bitalpha' --lr 5e-3 --num_epoch 100 --threshold 8 --gpu_id 0
 ```
 
 
